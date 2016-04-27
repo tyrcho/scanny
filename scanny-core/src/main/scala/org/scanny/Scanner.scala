@@ -19,6 +19,16 @@ import java.util.ArrayList
 import org.jsoup.nodes.Element
 import scala.collection.JavaConversions._
 import org.apache.http.HttpHost
+import org.apache.http.client.methods.HttpPost
+import org.apache.http.NameValuePair
+import org.apache.http.message.BasicNameValuePair
+import org.apache.http.client.entity.UrlEncodedFormEntity
+import org.apache.http.client.RedirectStrategy
+import org.apache.http.HttpRequest
+import org.apache.http.protocol.HttpContext
+import org.apache.http.ProtocolException
+import org.apache.http.client.methods.HttpUriRequest
+import org.apache.http.impl.client.DefaultRedirectStrategy
 
 object Scanner {
 
@@ -28,11 +38,16 @@ object Scanner {
   def scan(analyzer: Analyzer, proxy: Option[HttpHost] = None) = {
 
     val httpclient = {
-      if (proxy.isDefined) HttpClients.custom.setProxy(proxy.get).setDefaultRequestConfig(globalConfig).setDefaultCookieStore(cookieStore).build
-      else HttpClients.custom.setDefaultRequestConfig(globalConfig).setDefaultCookieStore(cookieStore).build
+      if (proxy.isDefined) HttpClients.custom.setRedirectStrategy(new AllowPOSTRedirection()).setProxy(proxy.get).setDefaultRequestConfig(globalConfig).setDefaultCookieStore(cookieStore).build
+      else HttpClients.custom.setRedirectStrategy(new AllowPOSTRedirection()).setDefaultRequestConfig(globalConfig).setDefaultCookieStore(cookieStore).build
     }
     try {
-      val homePage = processHttpRequest(httpclient, analyzer.getHomePage)
+
+      val httpRequest = getHttpRequest(analyzer)
+
+      val homePage = processHttpRequest(httpclient, httpRequest)
+
+      println(homePage)
 
       val html = Jsoup.parse(homePage)
 
@@ -46,7 +61,10 @@ object Scanner {
 
       displayProductForAPage(promoLink, "promo")
 
-      displayProductForAPage(rayonLinks.head._1, rayonLinks.head._2)
+      if(!rayonLinks.isEmpty){
+        displayProductForAPage(rayonLinks.head._1, rayonLinks.head._2)
+      }
+      
 
       /*
     	for (rayon <- rayonLinks) {
@@ -58,7 +76,7 @@ object Scanner {
     }
 
     def displayProductForAPage(rayonUrl: String, rayonName: String) = {
-      val rayonHTML = processHttpRequest(httpclient, analyzer.getHostName + rayonUrl)
+      val rayonHTML = processHttpRequest(httpclient, new HttpGet(analyzer.getHostName + rayonUrl))
       val products = analyzer.listProductsInAPage(Jsoup.parse(rayonHTML))
       val nbProducts = products.size
       println(products.mkString(s"List products for rayon $rayonName (nb product : $nbProducts)", "\n", "---------------"))
@@ -66,18 +84,34 @@ object Scanner {
 
   }
 
+  
+  private def getHttpRequest(analyzer: Analyzer) = {
+      
+      val homepage = analyzer.getHomePage
+      val httpRequest = if(homepage.httpMethod == "GET") new HttpGet(homepage.url) else new HttpPost(homepage.url)
 
-  private def processHttpRequest(httpclient: CloseableHttpClient, url: String): String = {
+      httpRequest match {
+       case p: HttpPost => {
+         val nvps = for {
+           d <- homepage.data.toList
+         } yield new BasicNameValuePair(d._1, d._2)
+         p.setEntity(new UrlEncodedFormEntity(nvps))
+       }
+       case _ => 
+      }
 
-    val httpget = new HttpGet(url)
+      httpRequest
+  }
+  
+  private def processHttpRequest(httpclient: CloseableHttpClient, httpRequest: HttpUriRequest): String = {
 
     // Create a custom response handler
     val responseHandler = new ResponseHandler[String] {
 
       @Override
       def handleResponse(response: HttpResponse): String = {
-        println(httpget)
-        println(httpget.getAllHeaders.mkString("\n"))
+        println(httpRequest)
+        println(httpRequest.getAllHeaders.mkString("\n"))
         println("----------------------------------------")
         println(response.getStatusLine)
         println(response.getAllHeaders.mkString("\n"))
@@ -85,7 +119,7 @@ object Scanner {
         println("Cookies:\n" + cookieStore.getCookies.toArray().mkString("\n"))
 
         val status = response.getStatusLine.getStatusCode
-        if (status >= 200 && status < 300) {
+        if (status >= 200 && status <= 302) {
           val entity = response.getEntity
           if (entity != null) EntityUtils.toString(entity) else null
         } else {
@@ -97,7 +131,14 @@ object Scanner {
 
     val context = HttpClientContext.create();
     context.setCookieStore(cookieStore);
-    httpclient.execute(httpget, responseHandler, context)
+    httpclient.execute(httpRequest, responseHandler, context)
   }
 }
 
+
+class AllowPOSTRedirection extends DefaultRedirectStrategy {
+  
+  override def isRedirectable(method : String) = method.equals("GET") || method.equals("POST")
+  
+  
+}

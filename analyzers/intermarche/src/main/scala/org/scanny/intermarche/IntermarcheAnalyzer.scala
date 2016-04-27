@@ -9,9 +9,9 @@ import org.scanny.Product
 
 class IntermarcheAnalyzer extends Analyzer {
   
-  def getHostName = "https://drive.intermarche.com"
+  def getHomePage = HomePage("https://drive.intermarche.com/Home?p=360" , "GET", Map.empty)
   
-  def getHomePage : String = "https://drive.intermarche.com/Home?p=360"
+  def getHostName : String = "https://drive.intermarche.com"
   
   def getPromoLink(element: Element) : String = element.select(".js-voir_promotion").first.attr("href")
     

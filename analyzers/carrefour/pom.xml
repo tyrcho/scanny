@@ -7,10 +7,10 @@
 	<parent>
 		<groupId>org.scanny</groupId>
 		<version>0.1-SNAPSHOT</version>
-		<artifactId>scanny-parent</artifactId>
+		<artifactId>analyzers</artifactId>
 	</parent>
 
-	<artifactId>scanny-app</artifactId>
+	<artifactId>carrefour</artifactId>
 
 	<dependencies>
 		<dependency>
@@ -18,23 +18,9 @@
 			<artifactId>scanny-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
-		
-		<dependency>
-			<groupId>org.scanny</groupId>
-			<artifactId>intermarche</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		
-		
-		<dependency>
-			<groupId>org.scanny</groupId>
-			<artifactId>carrefour</artifactId>
-			<version>${project.version}</version>
-		</dependency>
 	</dependencies>
-	
-	
+
+
 	<build>
 		<sourceDirectory>src/main/scala</sourceDirectory>
 		<testSourceDirectory>src/test/scala</testSourceDirectory>
@@ -49,5 +35,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

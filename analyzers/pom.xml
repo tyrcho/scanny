@@ -15,6 +15,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>intermarche</module>
+		<module>carrefour</module>
 	</modules>
 
 	<properties>
