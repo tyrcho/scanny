@@ -47,8 +47,6 @@ object Scanner {
 
       val homePage = processHttpRequest(httpclient, httpRequest)
 
-      println(homePage)
-
       val html = Jsoup.parse(homePage)
 
       val promoLink = analyzer.getPromoLink(html)

@@ -18,7 +18,23 @@ class CarrefourAnalyzer extends Analyzer {
   }
   
   def getRayonList(element: Element) : Map[String, String] = {
-    Map.empty
+    val elements = element.select("a.page").asInstanceOf[ArrayList[Element]].toList
+    
+    for (el <- elements){
+      val url = el.attr("href")
+      if(url.contains("tous-les-rayons")) {
+      //  println (el)
+      }
+        
+    }
+      
+    
+    (for {
+      el <- elements
+      url = el.attr("href")
+      childNode = el.childNode(0)
+      if( url.contains("tous-les-rayons") && !el.children.isEmpty() && !childNode.toString.contains("<img")) 
+    }yield url -> childNode.childNode(0).toString ).toMap
   }
   
   def listProductsInAPage(element: Element) : List[Product] = {
